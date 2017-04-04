@@ -19,15 +19,15 @@ public class GameController implements DrawView.SurfaceCallbacs {
   private boolean surfaceModified;
   private Context context;
   private Paint paint;
-  private int width, height;
+  private Rect rect;
   private ReentrantLock lock;
   
   GameController(Context c) {
     context = c;
     surfaceModified = true;
     paint = new Paint();
-    width = height = 0;
     lock = new ReentrantLock();
+    rect = new Rect();
   }
 
   @Override
@@ -41,21 +41,19 @@ public class GameController implements DrawView.SurfaceCallbacs {
   
   @Override
   public void surfaceSetSize(int w, int h) {
-    width = w;
-    height = h;
+    rect.set(0, 0, w, h);
     geometrySetup();
   }
   
   @Override
   public void surfaceDraw(Canvas canvas) {
+/*
     Rect rect = new Rect();
     String text = String.format("%d", System.currentTimeMillis());
-/*
     rect.set(0, 0, width, height);
     paint.setColor(Color.WHITE);
     paint.setStyle(Paint.Style.FILL);
     canvas.drawRect(rect, paint);
-*/
 
     paint.setTypeface(Typeface.DEFAULT);// your preference here
     paint.setTextSize(30);// have this the same as your text size
@@ -71,6 +69,7 @@ public class GameController implements DrawView.SurfaceCallbacs {
 
     paint.setColor(Color.BLACK);
     canvas.drawText(text, x, y, paint);
+*/
   }
 
   @Override
@@ -107,7 +106,7 @@ public class GameController implements DrawView.SurfaceCallbacs {
     setSurfaceModified(true);
   }
   
-  void geometrySetup() {
+  private void geometrySetup() {
     
   }
   
