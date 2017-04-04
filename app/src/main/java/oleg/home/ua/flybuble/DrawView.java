@@ -13,6 +13,7 @@ import android.view.SurfaceView;
 
 public class DrawView extends SurfaceView implements Callback {
   private DrawThread drawThread;
+  private SurfaceCallbacs surfaceCallbacs = null;
 
   public DrawView(Context context) {
     super(context);
@@ -46,6 +47,18 @@ public class DrawView extends SurfaceView implements Callback {
     }
   }
 
+  public void setSurfaceCallbacs(SurfaceCallbacs sc) {
+    surfaceCallbacs = sc;
+  }
+  
+  @Override
+  protected void onSizeChanged(int w, int h, int oldw, int oldh) {
+    super.onSizeChanged(w, h, oldw, oldh);
+    if(surfaceCallbacs != null)
+      surfaceCallbacs.surfaceSetSize(w, h);
+  }
+  
+  
   private class DrawThread extends Thread {
 
     private boolean running = false;
@@ -62,20 +75,50 @@ public class DrawView extends SurfaceView implements Callback {
     @Override
     public void run() {
       Canvas canvas;
+      SurfaceCallbacs sc;
       while (running) {
         canvas = null;
+        sc = surfaceCallbacs;
+          
         try {
-          canvas = surfaceHolder.lockCanvas(null);
-          if (canvas == null)
+          if(sc == null
+            || !sc.isSurfaceModified()
+            ) {
+            sleep(10);
             continue;
-          canvas.drawColor(Color.GREEN);
-        } finally {
+          }
+
+          canvas = surfaceHolder.lockCanvas(null);
+
+          if(canvas != null) {
+            sc.surfaceLock();
+            sc.surfaceDraw(canvas);
+            sc.surfaceUnlock();
+            sc.setSurfaceModified(false);
+          }
+          
+        }
+        catch (Exception ignored) {
+          
+        }
+        finally {
           if (canvas != null) {
             surfaceHolder.unlockCanvasAndPost(canvas);
           }
         }
       }
     }
+  }
+
+  public interface SurfaceCallbacs {
+  
+    public boolean isSurfaceModified();
+    public void setSurfaceModified(boolean m);
+    public void surfaceDraw(Canvas canvas);
+    public void surfaceLock();
+    public void surfaceUnlock();
+    public void surfaceSetSize(int w, int h);
+    
   }
 
 }
