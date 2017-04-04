@@ -7,6 +7,8 @@ import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.Typeface;
 
+import java.util.concurrent.locks.ReentrantLock;
+
 /**
  * Class implements game logic
  */
@@ -14,17 +16,18 @@ import android.graphics.Typeface;
 
 public class GameController implements DrawView.SurfaceCallbacs {
 
-  boolean surfaceModified;
-  Context context;
-  Paint paint;
-  int width, height;
-  
+  private boolean surfaceModified;
+  private Context context;
+  private Paint paint;
+  private int width, height;
+  private ReentrantLock lock;
   
   GameController(Context c) {
     context = c;
     surfaceModified = true;
     paint = new Paint();
     width = height = 0;
+    lock = new ReentrantLock();
   }
 
   @Override
@@ -40,6 +43,7 @@ public class GameController implements DrawView.SurfaceCallbacs {
   public void surfaceSetSize(int w, int h) {
     width = w;
     height = h;
+    geometrySetup();
   }
   
   @Override
@@ -71,10 +75,12 @@ public class GameController implements DrawView.SurfaceCallbacs {
 
   @Override
   public void surfaceLock() {
+    lock.lock();
   }
   
   @Override
   public void surfaceUnlock() {
+    lock.unlock();
   }
 
   void onResume() {
@@ -99,6 +105,10 @@ public class GameController implements DrawView.SurfaceCallbacs {
   
   void onTouchMove(int id, float fx, float fy) {
     setSurfaceModified(true);
+  }
+  
+  void geometrySetup() {
+    
   }
   
 }
