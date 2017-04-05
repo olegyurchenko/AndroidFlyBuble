@@ -7,8 +7,8 @@ import android.content.Context;
  */
 
 public class MainController extends GraphicController {
-  public final int PLAY_BTN_ID = 1;
-  public final int SETTINGS_BTN_ID = 2;
+  public static final int PLAY_BTN_ID = 1;
+  public static final int SETTINGS_BTN_ID = 2;
   private Button playBtn, settingsBtn;
   MainController(Context c) {
     super(c);

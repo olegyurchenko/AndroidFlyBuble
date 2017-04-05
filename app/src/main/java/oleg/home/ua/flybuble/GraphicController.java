@@ -95,10 +95,10 @@ public class GraphicController implements DrawView.SurfaceCallbacs {
   }
 
   void onResume() {
-
+    setSurfaceModified(true);
   }
 
-  public void backgroundDraw(Canvas canvas) {
+  protected void backgroundDraw(Canvas canvas) {
 
   }
 
