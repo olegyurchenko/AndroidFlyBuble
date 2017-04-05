@@ -1,12 +1,14 @@
 package oleg.home.ua.flybuble;
 
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Rect;
-import android.graphics.Typeface;
+import android.view.View;
 
+import java.util.ArrayList;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
@@ -17,17 +19,21 @@ import java.util.concurrent.locks.ReentrantLock;
 public class GraphicController implements DrawView.SurfaceCallbacs {
 
   private boolean surfaceModified;
-  private Context context;
-  private Paint paint;
-  private Rect rect;
-  private ReentrantLock lock;
-  
+  protected  Context context;
+  protected  Paint paint;
+  protected  Rect rect;
+  protected ReentrantLock lock;
+  protected ArrayList<Object> childList;
+  protected ClickListener clickListener = null;
+
+
   GraphicController(Context c) {
     context = c;
     surfaceModified = true;
     paint = new Paint();
     lock = new ReentrantLock();
     rect = new Rect();
+    childList = new ArrayList<>();
   }
 
   @Override
@@ -47,6 +53,13 @@ public class GraphicController implements DrawView.SurfaceCallbacs {
   
   @Override
   public void surfaceDraw(Canvas canvas) {
+
+    backgroundDraw(canvas);
+    for(Object o : childList) {
+      Drawable d = (Drawable) o;
+      if(o != null)
+        d.onDraw(canvas);
+    }
 /*
     Rect rect = new Rect();
     String text = String.format("%d", System.currentTimeMillis());
@@ -83,31 +96,204 @@ public class GraphicController implements DrawView.SurfaceCallbacs {
   }
 
   void onResume() {
-    setSurfaceModified(true);
+
+  }
+
+  public void backgroundDraw(Canvas canvas) {
+
   }
 
   void onPause() {
-    setSurfaceModified(true);
+
   }
 
   void onTimer() {
-    setSurfaceModified(true);
+    long ms = System.currentTimeMillis();
+    for(Object o : childList) {
+      Timerable t = (Timerable) o;
+      if(t != null)
+        t.onTimer(ms);
+    }
   }
   
   void onTouchDown(int id, float fx, float fy) {
-    setSurfaceModified(true);
+    for(Object o : childList) {
+      Button b = (Button) o;
+      if(b != null) {
+        if(b.contains(fx, fy)) {
+          b.onTochDown();
+          setSurfaceModified(true);
+        }
+      }
+    }
+
+
   }
   
   void onTouchUp(int id, float x, float y) {
-    setSurfaceModified(true);
+    for(Object o : childList) {
+      Button b = (Button) o;
+      if(b != null) {
+        if(b.isDown()) {
+          b.onTouchUp();
+          setSurfaceModified(true);
+        }
+      }
+    }
   }
   
   void onTouchMove(int id, float fx, float fy) {
-    setSurfaceModified(true);
+
+    for(Object o : childList) {
+      Button b = (Button) o;
+      if(b != null) {
+        if(b.isDown() && !b.contains(fx, fy)) {
+          b.onTouchUp();
+          setSurfaceModified(true);
+        }
+      }
+    }
+
   }
   
-  private void geometrySetup() {
-    
+  protected void geometrySetup() {
   }
-  
+
+  public void setClickListener(ClickListener l) {
+    clickListener = l;
+  }
+
+  protected void onClick(int id) {
+    if(clickListener != null)
+      clickListener.onClick(id);
+  }
+
+
+  public interface Drawable {
+    public void onDraw(Canvas canvas);
+  }
+
+  public interface Timerable {
+    public void onTimer(long ms);
+  }
+
+  public interface ClickListener {
+    public void onClick(int id);
+  }
+
+
+  class GraphicObject implements Drawable {
+    private int id;
+    Rect rect;
+
+    GraphicObject(int id) {
+      this.id = id;
+      childList.add(this);
+      rect = new Rect();
+    }
+
+    int getId() {return id;}
+    Rect getRect() {return rect;}
+    void move(int x, int y) {rect.offsetTo(x, y);}
+    void resize(int w, int h) {rect.set(rect.left, rect.top, rect.left + w, rect.top + h);}
+    boolean contains (int x, int y) {return  rect.contains(x, y);}
+    boolean contains (float x, float y) {return  rect.contains((int)x, (int)y);}
+
+    @Override
+    public void onDraw(Canvas canvas) {
+
+    }
+  }
+
+  enum  ButtonState {
+    UP,
+    DOWN
+  }
+
+  class Button extends GraphicObject implements Timerable {
+    Bitmap bmp = null;
+    Bitmap upBmp, downBmp;
+    ButtonState state;
+    final long REPEAT_TIMEOUT = 3000;
+    final long REPEAT_PERIOD = 500;
+    long timeout, lastTimer;
+
+
+
+    Button(int id, int up_image_id, int down_image_id) {
+      super(id);
+      state = ButtonState.UP;
+      upBmp = BitmapFactory.decodeResource(context.getResources(), up_image_id);
+      downBmp = BitmapFactory.decodeResource(context.getResources(), down_image_id);
+    }
+
+    ButtonState getState() {return state;}
+    boolean isDown() {return state == ButtonState.DOWN;}
+
+    void setState(ButtonState s) {
+      if(state != s) {
+        state = s;
+        onModify();
+        if(s == ButtonState.DOWN) {
+          onClick(getId());
+          lastTimer = System.currentTimeMillis();
+          timeout = REPEAT_TIMEOUT;
+        }
+      }
+    }
+
+    void onModify() {
+      Bitmap src = null;
+      bmp = null;
+      if(state == ButtonState.UP) {
+        src = upBmp;
+      }
+      if(state == ButtonState.DOWN) {
+        src = downBmp;
+      }
+
+      if(src != null)
+        bmp = Bitmap.createScaledBitmap(src, rect.width(), rect.height(), true);
+
+    }
+
+    @Override
+    void resize(int w, int h) {
+      super.resize(w, h);
+      onModify();
+    }
+
+    @Override
+    public void onDraw(Canvas canvas) {
+      if(bmp != null) {
+        canvas.drawBitmap(bmp, rect.left, rect.top, paint);
+      }
+
+    }
+
+    @Override
+    public void onTimer(long ms) {
+      if(state == ButtonState.DOWN) {
+        timeout -= (ms - lastTimer);
+
+        if(timeout <= 0) {
+          timeout = REPEAT_PERIOD;
+          onClick(getId());
+        }
+
+      }
+
+      lastTimer = ms;
+    }
+
+    void onTochDown() {
+      setState(ButtonState.DOWN);
+    }
+
+    void onTouchUp() {
+      setState(ButtonState.UP);
+    }
+  }
+
+
 }
