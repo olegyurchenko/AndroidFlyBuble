@@ -24,6 +24,7 @@ public class GraphicController implements DrawView.SurfaceCallbacs {
   protected ReentrantLock lock;
   protected ArrayList<Object> childList;
   protected ClickListener clickListener = null;
+  private boolean active;
 
 
   GraphicController(Context c) {
@@ -33,6 +34,7 @@ public class GraphicController implements DrawView.SurfaceCallbacs {
     lock = new ReentrantLock();
     rect = new Rect();
     childList = new ArrayList<>();
+    active = false;
   }
 
   @Override
@@ -55,7 +57,13 @@ public class GraphicController implements DrawView.SurfaceCallbacs {
 
     backgroundDraw(canvas);
     for(Object o : childList) {
-      Drawable d = (Drawable) o;
+      Drawable d = null;
+      try {
+        d = (Drawable) o;
+      }
+      catch (Exception ignored) {
+        
+      }
       if(o != null)
         d.onDraw(canvas);
     }
@@ -84,6 +92,9 @@ public class GraphicController implements DrawView.SurfaceCallbacs {
 */
   }
 
+  protected void backgroundDraw(Canvas canvas) {
+  }
+
   @Override
   public void surfaceLock() {
     lock.lock();
@@ -94,22 +105,30 @@ public class GraphicController implements DrawView.SurfaceCallbacs {
     lock.unlock();
   }
 
+  void setActive(boolean a) {active = a;}
+  boolean isActive() {return active;}
+  
   void onResume() {
     setSurfaceModified(true);
+    setActive(true);
   }
 
-  protected void backgroundDraw(Canvas canvas) {
-
-  }
 
   void onPause() {
-
+    setActive(false);
   }
 
   void onTimer() {
     long ms = System.currentTimeMillis();
     for(Object o : childList) {
-      Timerable t = (Timerable) o;
+      Timerable t = null;
+      try {
+        t = (Timerable) o;
+      }
+      catch (Exception ignored) {
+        
+      }
+
       if(t != null)
         t.onTimer(ms);
     }
@@ -117,7 +136,13 @@ public class GraphicController implements DrawView.SurfaceCallbacs {
   
   void onTouchDown(int id, float fx, float fy) {
     for(Object o : childList) {
-      Button b = (Button) o;
+      Button b = null;
+      try {
+        b = (Button) o;
+      }
+      catch (Exception ignored) {
+        
+      }
       if(b != null) {
         if(b.contains(fx, fy)) {
           b.onTouchDown();
@@ -131,7 +156,13 @@ public class GraphicController implements DrawView.SurfaceCallbacs {
   
   void onTouchUp(int id, float x, float y) {
     for(Object o : childList) {
-      Button b = (Button) o;
+      Button b = null;
+      try {
+        b = (Button) o;
+      }
+      catch (Exception ignored) {
+        
+      }
       if(b != null) {
         if(b.isDown()) {
           b.onTouchUp();
@@ -144,7 +175,14 @@ public class GraphicController implements DrawView.SurfaceCallbacs {
   void onTouchMove(int id, float fx, float fy) {
 
     for(Object o : childList) {
-      Button b = (Button) o;
+      Button b = null;
+      try {
+        b = (Button) o;
+      }
+      catch (Exception ignored) {
+        
+      }
+      
       if(b != null) {
         if(b.isDown() && !b.contains(fx, fy)) {
           b.onTouchUp();
@@ -159,7 +197,19 @@ public class GraphicController implements DrawView.SurfaceCallbacs {
 
   }
   
+  protected void removeChild(Object o) {
+    surfaceLock();
+    try {
+      childList.remove(o);
+    }
+    
+    finally {
+      surfaceUnlock();
+    }
+  }
+  
   protected void geometrySetup() {
+    //Pure virtual
   }
 
   public void setClickListener(ClickListener l) {
@@ -167,7 +217,7 @@ public class GraphicController implements DrawView.SurfaceCallbacs {
   }
 
   protected void onClick(int id) {
-    if(clickListener != null)
+    if(isActive() && clickListener != null)
       clickListener.onClick(id);
   }
 
@@ -217,9 +267,9 @@ public class GraphicController implements DrawView.SurfaceCallbacs {
     Bitmap bmp = null;
     Bitmap upBmp, downBmp;
     ButtonState state;
-    final long REPEAT_TIMEOUT = 3000;
-    final long REPEAT_PERIOD = 500;
-    long timeout, lastTimer;
+    long repeatTimeout = 3000;
+    long repeatPeriod = 500;
+    long lastTimer, timeout;
 
 
 
@@ -228,6 +278,7 @@ public class GraphicController implements DrawView.SurfaceCallbacs {
       state = ButtonState.UP;
       upBmp = BitmapFactory.decodeResource(context.getResources(), up_image_id);
       downBmp = BitmapFactory.decodeResource(context.getResources(), down_image_id);
+      timeout = repeatTimeout;
     }
 
     ButtonState getState() {return state;}
@@ -239,10 +290,18 @@ public class GraphicController implements DrawView.SurfaceCallbacs {
         onModify();
         if(s == ButtonState.DOWN) {
           onClick(getId());
-          lastTimer = System.currentTimeMillis();
-          timeout = REPEAT_TIMEOUT;
+          lastTimer = 0;
+          timeout = repeatTimeout;
         }
       }
+    }
+    
+    void setRepeatTimeout(long t) {
+      repeatTimeout = t;
+    }
+    
+    void setRepeatPeriod(long t) {
+      repeatPeriod = t;
     }
 
     void onModify() {
@@ -276,17 +335,17 @@ public class GraphicController implements DrawView.SurfaceCallbacs {
 
     @Override
     public void onTimer(long ms) {
-      if(state == ButtonState.DOWN) {
-        timeout -= (ms - lastTimer);
-
-        if(timeout <= 0) {
-          timeout = REPEAT_PERIOD;
+  
+      if(lastTimer + timeout < ms) {
+    
+        if(state == ButtonState.DOWN) {
+          timeout = repeatPeriod;
           onClick(getId());
         }
-
+    
+        lastTimer = ms;
       }
 
-      lastTimer = ms;
     }
 
     void onTouchDown() {
