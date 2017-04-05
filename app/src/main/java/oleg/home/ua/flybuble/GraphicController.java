@@ -6,7 +6,6 @@ import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Rect;
-import android.view.View;
 
 import java.util.ArrayList;
 import java.util.concurrent.locks.ReentrantLock;
@@ -121,7 +120,7 @@ public class GraphicController implements DrawView.SurfaceCallbacs {
       Button b = (Button) o;
       if(b != null) {
         if(b.contains(fx, fy)) {
-          b.onTochDown();
+          b.onTouchDown();
           setSurfaceModified(true);
         }
       }
@@ -149,6 +148,10 @@ public class GraphicController implements DrawView.SurfaceCallbacs {
       if(b != null) {
         if(b.isDown() && !b.contains(fx, fy)) {
           b.onTouchUp();
+          setSurfaceModified(true);
+        }
+        if(!b.isDown() && b.contains(fx, fy)) {
+          b.onTouchDown();
           setSurfaceModified(true);
         }
       }
@@ -286,7 +289,7 @@ public class GraphicController implements DrawView.SurfaceCallbacs {
       lastTimer = ms;
     }
 
-    void onTochDown() {
+    void onTouchDown() {
       setState(ButtonState.DOWN);
     }
 
