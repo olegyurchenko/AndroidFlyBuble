@@ -14,7 +14,7 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 
 
-public class GameController implements DrawView.SurfaceCallbacs {
+public class GraphicController implements DrawView.SurfaceCallbacs {
 
   private boolean surfaceModified;
   private Context context;
@@ -22,7 +22,7 @@ public class GameController implements DrawView.SurfaceCallbacs {
   private Rect rect;
   private ReentrantLock lock;
   
-  GameController(Context c) {
+  GraphicController(Context c) {
     context = c;
     surfaceModified = true;
     paint = new Paint();
