@@ -1,3 +1,7 @@
 <resources>
     <string name="app_name">Fly buble</string>
+    <string name="keys_position">Keys position</string>
+    <string name="left_position">Left</string>
+    <string name="right_position">Right</string>
+    <string name="dual_position">Dual</string>
 </resources>

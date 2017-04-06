@@ -19,19 +19,21 @@ public class GameController extends GraphicController {
   private final static long REPEAT_TIMEOUT = 100;
   private final static long REPEAT_PERIOD = 100;
 
-  private GameButton leftBtn1, leftBtn2, rightBtn1, rightBtn2;
+  private GameButton leftBtn;
+  private GameButton rightBtn;
   private Rect fieldRect;
   private Buble buble;
+  private Settings settings;
   
   GameController(Context c) {
     super(c);
 
+    settings = Settings.getInstance(c);
+
     fieldRect = new Rect();
     
-    leftBtn1 = new GameButton(LEFT_BTN_ID, R.mipmap.left_btn_up, R.mipmap.left_btn_down);
-    leftBtn2 = new GameButton(LEFT_BTN_ID, R.mipmap.left_btn_up, R.mipmap.left_btn_down);
-    rightBtn1 = new GameButton(RIGHT_BTN_ID, R.mipmap.right_btn_up, R.mipmap.right_btn_down);
-    rightBtn2 = new GameButton(RIGHT_BTN_ID, R.mipmap.right_btn_up, R.mipmap.right_btn_down);
+    leftBtn = new GameButton(LEFT_BTN_ID, R.mipmap.left_btn_up, R.mipmap.left_btn_down);
+    rightBtn = new GameButton(RIGHT_BTN_ID, R.mipmap.right_btn_up, R.mipmap.right_btn_down);
 
     buble = new Buble();
   }
@@ -42,29 +44,38 @@ public class GameController extends GraphicController {
     final int b = 50;
     int x, y;
     
-    leftBtn1.resize(d, d);
-    leftBtn2.resize(d, d);
-    rightBtn1.resize(d, d);
-    rightBtn2.resize(d, d);
+    leftBtn.resize(d, d);
+    rightBtn.resize(d, d);
 
-    x = b;
-    y = rect.height() / 2 - d - b;
-    
-    leftBtn1.move(x, y);
-  
-    y = rect.height() / 2 + b;
-    rightBtn1.move(x, y);
+    switch (settings.keysPosition) {
+      case Settings.LEFT_KEY_POSITION:
+        x = b;
+        y = rect.height() / 2 - d - b;
+        leftBtn.move(x, y);
+        y = rect.height() / 2 + b;
+        rightBtn.move(x, y);
+        fieldRect.set(2 * b + d, 0, rect.right, rect.bottom);
+        break;
 
-    x = rect.width() - d - b;
-    y = rect.height() / 2 - d - b;
-    leftBtn2.move(x, y);
-  
-    y = rect.height() / 2 + b;
-    rightBtn2.move(x, y);
+      case Settings.RIGHT_KEY_POSITION:
+        x = rect.width() - d - b;
+        y = rect.height() / 2 - d - b;
+        leftBtn.move(x, y);
+        y = rect.height() / 2 + b;
+        rightBtn.move(x, y);
+        fieldRect.set(0, 0, rect.right - 2 * b - d, rect.bottom);
+        break;
 
-    
-    fieldRect.set(2 * b + d, 0, rect.right - 2 * b - d, rect.bottom);
-    
+      case Settings.DUAL_KEY_POSITION:
+        x = b;
+        y = (rect.height() - d) / 2;
+        leftBtn.move(x, y);
+        x = rect.width() - d - b;
+        rightBtn.move(x, y);
+        fieldRect.set(2 * b + d, 0, rect.right - 2 * b - d, rect.bottom);
+        break;
+    }
+
     buble.resize(d, d);
     buble.move(rect.width() / 2 - d, rect.bottom - d - b);
   }

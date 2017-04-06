@@ -41,7 +41,10 @@ public class MainActivity extends GraphicActivity  implements GraphicController.
   }
   
   void settings() {
-    
+    // Создаем объект Intent для вызова новой Activity
+    Intent intent = new Intent(this, SettingsActivity.class);
+    // запуск activity
+    startActivity(intent);
   }
 
 }
