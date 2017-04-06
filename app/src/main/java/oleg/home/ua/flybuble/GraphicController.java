@@ -144,8 +144,8 @@ public class GraphicController implements DrawView.SurfaceCallbacs {
         
       }
       if(b != null) {
-        if(b.contains(fx, fy)) {
-          b.onTouchDown();
+        if(!b.isDown() && b.contains(fx, fy)) {
+          b.onTouchDown(id);
           setSurfaceModified(true);
         }
       }
@@ -164,7 +164,7 @@ public class GraphicController implements DrawView.SurfaceCallbacs {
         
       }
       if(b != null) {
-        if(b.isDown()) {
+        if(b.isDown() && b.getTouchId() == id) {
           b.onTouchUp();
           setSurfaceModified(true);
         }
@@ -184,12 +184,12 @@ public class GraphicController implements DrawView.SurfaceCallbacs {
       }
       
       if(b != null) {
-        if(b.isDown() && !b.contains(fx, fy)) {
+        if(b.isDown() && b.getTouchId() == id && !b.contains(fx, fy)) {
           b.onTouchUp();
           setSurfaceModified(true);
         }
         if(!b.isDown() && b.contains(fx, fy)) {
-          b.onTouchDown();
+          b.onTouchDown(id);
           setSurfaceModified(true);
         }
       }
@@ -270,6 +270,7 @@ public class GraphicController implements DrawView.SurfaceCallbacs {
     long repeatTimeout = 3000;
     long repeatPeriod = 500;
     long lastTimer, timeout;
+    int touchId;
 
 
 
@@ -348,12 +349,23 @@ public class GraphicController implements DrawView.SurfaceCallbacs {
 
     }
 
+    int getTouchId() {return touchId;}
+
     void onTouchDown() {
+      setState(ButtonState.DOWN);
+    }
+    void onTouchDown(int id) {
+      if(!isDown())
+        touchId = id;
       setState(ButtonState.DOWN);
     }
 
     void onTouchUp() {
       setState(ButtonState.UP);
+    }
+    void onTouchUp(int id) {
+      if(isDown() && id == touchId)
+        setState(ButtonState.UP);
     }
   }
 
