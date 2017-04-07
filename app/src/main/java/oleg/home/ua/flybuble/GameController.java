@@ -9,6 +9,7 @@ import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.Region;
+import android.util.Log;
 
 import java.util.ArrayList;
 import java.util.Random;
@@ -327,34 +328,49 @@ public class GameController extends GraphicController {
 
     boolean isIntersection(Obstruction o) {
       if (bmpRect != null
-      && Rect.intersects(bmpRect, o.getRect())) {
-        Rect inter = new Rect(bmpRect);
-        if(inter.intersect(o.getRect())
-          && o.getBmp() != null
-          && bmp != null)
+        && bmp != null
+        && o.getBmp() != null
+        && Rect.intersects(bmpRect, o.getRect())) {
+  
+        Rect inter = new Rect(bmpRect.left, bmpRect.top,
+          bmpRect.left + bmp.getWidth(), bmpRect.top + bmp.getHeight());
+        
+        if(inter.intersect(o.getRect()))
         {
+          //Log.d("bmpRect", String.format("l:%d r:%d t:%d b:%d", bmpRect.left, bmpRect.right, bmpRect.top, bmpRect.bottom));
+          //Log.d("o.getRect", String.format("l:%d r:%d t:%d b:%d", o.getRect().left, o.getRect().right, o.getRect().top, o.getRect().bottom));
+          //Log.d("inter", String.format("l:%d r:%d t:%d b:%d", inter.left, inter.right, inter.top, inter.bottom));
           for(int x = inter.left; x < inter.right; x ++) {
             for (int y = inter.top; y < inter.bottom; y++) {
-  
+        
               int localX = x - bmpRect.left;
               int localY = y - bmpRect.top;
+              int transparency = 0;
               try {
-                int transparency = Color.alpha(bmp.getPixel(localX, localY));
-                if (transparency > 0) {
-                  localX = x - o.getRect().left;
-                  localY = y - o.getRect().top;
-                  transparency = Color.alpha(o.getBmp().getPixel(localX, localY));
-                  if (transparency > 0)
-                    return true;
-                }
+                transparency = Color.alpha(bmp.getPixel(localX, localY));
               }
-              
-              catch (Exception ignored) {
+              catch (Exception e) {
+                Log.d("bmp.getPixel", String.format("x:%d y:%d localX:%d localY:%d width:%d height:%d", x, y, localX, localY, bmp.getWidth(), bmp.getHeight()));
+              }
+              if (transparency > 0) {
+                localX = x - o.getRect().left;
+                localY = y - o.getRect().top;
+                transparency = 0;
+                try {
+                  transparency = Color.alpha(o.getBmp().getPixel(localX, localY));
+                }
+                catch (Exception e) {
+                  Log.d("getBmp.getPixel", String.format("localX:%d localY:%d width:%d height:%d", localX, localY, bmp.getWidth(), bmp.getHeight()));
+                }
+                if (transparency > 0)
+                  return true;
               }
             }
+      
           }
         }
       }
+  
       return false;
     }
   }
