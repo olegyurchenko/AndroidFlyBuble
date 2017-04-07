@@ -120,79 +120,120 @@ public class GraphicController implements DrawView.SurfaceCallbacs {
 
   void onTimer() {
     long ms = System.currentTimeMillis();
-    for(Object o : childList) {
-      Timerable t = null;
-      try {
-        t = (Timerable) o;
-      }
-      catch (Exception ignored) {
-        
-      }
 
-      if(t != null)
-        t.onTimer(ms);
+    surfaceLock();
+
+    try {
+      for(Object o : childList) {
+        Timerable t = null;
+        try {
+          t = (Timerable) o;
+        }
+        catch (Exception ignored) {
+
+        }
+
+        if(t != null)
+          t.onTimer(ms);
+      }
+    }
+
+    finally {
+      surfaceUnlock();
     }
   }
   
   void onTouchDown(int id, float fx, float fy) {
-    for(Object o : childList) {
-      Button b = null;
-      try {
-        b = (Button) o;
-      }
-      catch (Exception ignored) {
-        
-      }
-      if(b != null) {
-        if(!b.isDown() && b.contains(fx, fy)) {
-          b.onTouchDown(id);
-          setSurfaceModified(true);
+
+    surfaceLock();
+
+    try {
+
+      for(Object o : childList) {
+        Button b = null;
+        try {
+          b = (Button) o;
+        }
+        catch (Exception ignored) {
+
+        }
+        if(b != null) {
+          if(!b.isDown() && b.contains(fx, fy)) {
+            b.onTouchDown(id);
+            setSurfaceModified(true);
+          }
         }
       }
+
+    }
+
+    finally {
+      surfaceUnlock();
     }
 
 
   }
   
   void onTouchUp(int id, float x, float y) {
-    for(Object o : childList) {
-      Button b = null;
-      try {
-        b = (Button) o;
-      }
-      catch (Exception ignored) {
-        
-      }
-      if(b != null) {
-        if(b.isDown() && b.getTouchId() == id) {
-          b.onTouchUp();
-          setSurfaceModified(true);
+
+    surfaceLock();
+
+    try {
+
+      for(Object o : childList) {
+        Button b = null;
+        try {
+          b = (Button) o;
+        }
+        catch (Exception ignored) {
+
+        }
+        if(b != null) {
+          if(b.isDown() && b.getTouchId() == id) {
+            b.onTouchUp();
+            setSurfaceModified(true);
+          }
         }
       }
     }
+
+    finally {
+      surfaceUnlock();
+    }
+
   }
   
   void onTouchMove(int id, float fx, float fy) {
 
-    for(Object o : childList) {
-      Button b = null;
-      try {
-        b = (Button) o;
-      }
-      catch (Exception ignored) {
-        
-      }
-      
-      if(b != null) {
-        if(b.isDown() && b.getTouchId() == id && !b.contains(fx, fy)) {
-          b.onTouchUp();
-          setSurfaceModified(true);
+    surfaceLock();
+
+    try {
+
+      for(Object o : childList) {
+        Button b = null;
+        try {
+          b = (Button) o;
         }
-        if(!b.isDown() && b.contains(fx, fy)) {
-          b.onTouchDown(id);
-          setSurfaceModified(true);
+        catch (Exception ignored) {
+
+        }
+
+        if(b != null) {
+          if(b.isDown() && b.getTouchId() == id && !b.contains(fx, fy)) {
+            b.onTouchUp();
+            setSurfaceModified(true);
+          }
+          if(!b.isDown() && b.contains(fx, fy)) {
+            b.onTouchDown(id);
+            setSurfaceModified(true);
+          }
         }
       }
+
+    }
+
+    finally {
+      surfaceUnlock();
     }
 
   }

@@ -5,8 +5,13 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Rect;
+import android.graphics.Region;
+
+import java.util.ArrayList;
+import java.util.Random;
 
 /**
  * Game controller.
@@ -18,20 +23,32 @@ public class GameController extends GraphicController {
   private final static int BUBLE_STEP = 50;
   private final static long REPEAT_TIMEOUT = 100;
   private final static long REPEAT_PERIOD = 100;
+  private final static int MOTION_STEP = 5;
+  private final static int MOTION_PAUSE = 20;
+  private final static int OBSTRUCTION_LENGTH = 150;
+  private final static int MAX_OBSTRUCTION_COUNT = 10;
+
 
   private GameButton leftBtn;
   private GameButton rightBtn;
   private Rect fieldRect;
+  private Rect screenRect;
   private Buble buble;
   private Settings settings;
-  
+  private Random random;
+  private long lastTimer = 0;
+
+
   GameController(Context c) {
     super(c);
+
+    random = new Random();
 
     settings = Settings.getInstance(c);
 
     fieldRect = new Rect();
-    
+    screenRect = rect;
+
     leftBtn = new GameButton(LEFT_BTN_ID, R.mipmap.left_btn_up, R.mipmap.left_btn_down);
     rightBtn = new GameButton(RIGHT_BTN_ID, R.mipmap.right_btn_up, R.mipmap.right_btn_down);
 
@@ -129,8 +146,68 @@ public class GameController extends GraphicController {
       setSurfaceModified(true);
     }
   }
-  
-  class GameButton extends Button {
+
+  private void motion() {
+
+    int objecCount = 0;
+    ArrayList<Object> rmList = null;
+
+    for(Object o : childList) {
+      Obstructionable obstc = null;
+
+      try {
+        obstc = (Obstructionable) o;
+      }
+      catch (Exception ignored) {
+      }
+
+      if(obstc != null) {
+        obstc.scrollingStep(MOTION_STEP);
+        if(obstc.isVisible())
+          objecCount ++;
+        else {
+          if(rmList == null)
+            rmList = new ArrayList<>(1);
+          rmList.add(obstc);
+        }
+      }
+
+    }
+
+    if(objecCount < MAX_OBSTRUCTION_COUNT) {
+      if((random.nextInt(1000) % 3) == 0)
+        new Obstruction(R.mipmap.pencil1);
+    }
+
+    if(rmList != null) {
+      for (Object o : rmList)
+        removeChild(o);
+    }
+
+    setSurfaceModified(true);
+  }
+
+
+  @Override
+  void onTimer() {
+    super.onTimer();
+    long ms = System.currentTimeMillis();
+    if(lastTimer + MOTION_PAUSE < ms) {
+      if(lastTimer != 0) {
+        surfaceLock();
+        try {
+          motion();
+        }
+
+        finally {
+          surfaceUnlock();
+        }
+      }
+      lastTimer = ms;
+    }
+  }
+
+  private class GameButton extends Button {
     GameButton(int id, int up_image_id, int down_image_id) {
       super(id, up_image_id, down_image_id);
       setRepeatTimeout(REPEAT_TIMEOUT);
@@ -138,7 +215,7 @@ public class GameController extends GraphicController {
     }
   }
   
-  class Buble extends GraphicObject implements Timerable {
+  private class Buble extends GraphicObject implements Timerable {
     Bitmap srcBmp, bmp;
     final int deltaX = 10, deltaY = 10;
     final long TRANSFORMATION_TIMEOUT = 1000;
@@ -206,5 +283,65 @@ public class GameController extends GraphicController {
 
   }
 
+  interface Obstructionable {
+    public void scrollingStep(int step);
+    public boolean isVisible();
+  }
+
+  private class Obstruction extends GraphicObject implements Obstructionable {
+    Bitmap bmp;
+
+    Obstruction(int resource_id) {
+      super(-1);
+
+      Bitmap srcBmp = BitmapFactory.decodeResource(context.getResources(), resource_id);
+      float aspectRatio = (float) srcBmp.getWidth() / (float) srcBmp.getHeight();
+
+      int w, h;
+      if(aspectRatio > 1.0) {
+        w = OBSTRUCTION_LENGTH;
+        h = (int)((float) w / aspectRatio);
+      }
+      else {
+        h = OBSTRUCTION_LENGTH;
+        w = (int)((float) h / aspectRatio);
+      }
+
+      srcBmp = Bitmap.createScaledBitmap(srcBmp, w, h, true);
+
+
+      float angle = random.nextFloat() * 360.0f;
+      Matrix matrix = new Matrix();
+      matrix.postRotate(angle);
+      bmp = Bitmap.createBitmap(srcBmp, 0, 0, srcBmp.getWidth(), srcBmp.getHeight(), matrix, true);
+
+      resize(bmp.getWidth(), bmp.getHeight());
+      move(random.nextInt(
+        fieldRect.left + rect.width() + fieldRect.width()) - rect.width(),
+        -1 * rect.height());
+    }
+
+    @Override
+    public void scrollingStep(int step) {
+      move(rect.left, rect.top + step);
+    }
+
+    @Override
+    public boolean isVisible() {
+      return rect.top < fieldRect.bottom;
+    }
+
+
+    @Override
+    public void onDraw(Canvas canvas) {
+      if (bmp != null) {
+        canvas.clipRect(fieldRect, Region.Op.REPLACE);
+
+        canvas.drawBitmap(bmp, rect.left, rect.top, paint);
+        //restore full canvas clip for any subsequent operations
+        canvas.clipRect(screenRect, Region.Op.REPLACE);
+      }
+    }
+  }
 
 }

@@ -79,16 +79,23 @@ public class DrawView extends SurfaceView implements Callback {
       while (running) {
         canvas = null;
         sc = surfaceCallbacs;
-          
+
         try {
-          if(sc == null
+          if (sc == null
             || !sc.isSurfaceModified()
             ) {
             sleep(10);
             continue;
           }
+        }
 
-          canvas = surfaceHolder.lockCanvas(null);
+        catch (Exception ignored) {
+          continue;
+        }
+
+        canvas = surfaceHolder.lockCanvas(null);
+
+        try {
 
           if(canvas != null) {
             sc.surfaceLock();
@@ -96,15 +103,24 @@ public class DrawView extends SurfaceView implements Callback {
             sc.surfaceUnlock();
             sc.setSurfaceModified(false);
           }
-          
+
         }
+
         catch (Exception ignored) {
-          
         }
+
         finally {
           if (canvas != null) {
             surfaceHolder.unlockCanvasAndPost(canvas);
           }
+        }
+
+
+        try {
+          sleep(10);
+        }
+
+        catch (Exception ignored) {
         }
       }
     }
