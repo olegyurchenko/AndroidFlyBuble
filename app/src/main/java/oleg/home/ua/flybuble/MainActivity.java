@@ -2,6 +2,7 @@ package oleg.home.ua.flybuble;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 
 public class MainActivity extends GraphicActivity  implements GraphicController.ClickListener {
 
@@ -34,6 +35,7 @@ public class MainActivity extends GraphicActivity  implements GraphicController.
 
   
   void start() {
+    Log.d("MainActivity", "start()");
     // Создаем объект Intent для вызова новой Activity
     Intent intent = new Intent(this, GameActivity.class);
     // запуск activity

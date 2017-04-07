@@ -7,6 +7,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Paint;
+import android.graphics.Point;
 import android.graphics.Rect;
 import android.graphics.Region;
 
@@ -121,21 +122,32 @@ public class GameController extends GraphicController {
   }
   
   private void toLeft() {
-    int x = buble.getRect().left;
+
+    int oldX = buble.getRect().left;
+    int x = oldX;
     if(x > fieldRect.left)
     {
       x -= BUBLE_STEP;
       if(x < fieldRect.left)
         x = fieldRect.left;
-      
+
       buble.move(x, buble.getRect().top);
+      ArrayList<Obstruction> lst = obstructionList();
+      for(Obstruction o : lst) {
+        if(buble.isIntersection(o)) {
+          buble.move(oldX, buble.getRect().top);
+          return;
+        }
+      }
+
       setSurfaceModified(true);
     }
     
   }
   
   private void toRight() {
-    
+
+    int oldX = buble.getRect().left;
     int x = buble.getRect().right;
     if(x < fieldRect.right)
     {
@@ -143,9 +155,36 @@ public class GameController extends GraphicController {
       if(x > fieldRect.right)
         x = fieldRect.right;
       buble.move(x - buble.getRect().width(), buble.getRect().top);
+
+      ArrayList<Obstruction> lst = obstructionList();
+      for(Obstruction o : lst) {
+        if (buble.isIntersection(o)) {
+          buble.move(oldX, buble.getRect().top);
+          return;
+        }
+      }
       setSurfaceModified(true);
     }
   }
+
+  private ArrayList<Obstruction> obstructionList() {
+    ArrayList<Obstruction> lst = new ArrayList<>();
+    for (Object o : childList) {
+      Obstruction obstc = null;
+
+      try {
+        obstc = (Obstruction) o;
+      } catch (Exception ignored) {
+      }
+
+      if (obstc != null) {
+        lst.add(obstc);
+      }
+    }
+
+    return lst;
+  }
+
 
   private void motion() {
 
@@ -153,16 +192,23 @@ public class GameController extends GraphicController {
     ArrayList<Object> rmList = null;
 
     for(Object o : childList) {
-      Obstructionable obstc = null;
+      Obstruction obstc = null;
 
       try {
-        obstc = (Obstructionable) o;
+        obstc = (Obstruction) o;
       }
       catch (Exception ignored) {
       }
 
       if(obstc != null) {
         obstc.scrollingStep(MOTION_STEP);
+        if(buble.isIntersection(obstc)) {
+          //!!!!! For debug
+          obstc.move(
+            obstc.getRect().left,
+            buble.getRect().top - obstc.getRect().height()
+          );
+        }
         if(obstc.isVisible())
           objecCount ++;
         else {
@@ -175,7 +221,7 @@ public class GameController extends GraphicController {
     }
 
     if(objecCount < MAX_OBSTRUCTION_COUNT) {
-      if((random.nextInt(1000) % 3) == 0)
+      if((random.nextInt(1000) % 20) == 0)
         new Obstruction(R.mipmap.pencil1);
     }
 
@@ -281,6 +327,15 @@ public class GameController extends GraphicController {
       }
     }
 
+
+    boolean isIntersection(Obstruction o) {
+      if (bmpRect != null
+      && Rect.intersects(bmpRect, o.getRect())) {
+        //TODO: Find bitmaps intersects
+        return true;
+      }
+      return false;
+    }
   }
 
   interface Obstructionable {

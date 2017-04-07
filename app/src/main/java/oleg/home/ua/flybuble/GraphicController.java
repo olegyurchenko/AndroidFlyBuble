@@ -380,7 +380,7 @@ public class GraphicController implements DrawView.SurfaceCallbacs {
   
       if(lastTimer + timeout < ms) {
     
-        if(state == ButtonState.DOWN) {
+        if(state == ButtonState.DOWN && lastTimer != 0) {
           timeout = repeatPeriod;
           onClick(getId());
         }
