@@ -7,7 +7,6 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Paint;
-import android.graphics.Point;
 import android.graphics.Rect;
 import android.graphics.Region;
 
@@ -69,33 +68,33 @@ public class GameController extends GraphicController {
       case Settings.LEFT_KEY_POSITION:
         x = b;
         y = rect.height() / 2 - d - b;
-        leftBtn.move(x, y);
+        leftBtn.moveTo(x, y);
         y = rect.height() / 2 + b;
-        rightBtn.move(x, y);
+        rightBtn.moveTo(x, y);
         fieldRect.set(2 * b + d, 0, rect.right, rect.bottom);
         break;
 
       case Settings.RIGHT_KEY_POSITION:
         x = rect.width() - d - b;
         y = rect.height() / 2 - d - b;
-        leftBtn.move(x, y);
+        leftBtn.moveTo(x, y);
         y = rect.height() / 2 + b;
-        rightBtn.move(x, y);
+        rightBtn.moveTo(x, y);
         fieldRect.set(0, 0, rect.right - 2 * b - d, rect.bottom);
         break;
 
       case Settings.DUAL_KEY_POSITION:
         x = b;
         y = (rect.height() - d) / 2;
-        leftBtn.move(x, y);
+        leftBtn.moveTo(x, y);
         x = rect.width() - d - b;
-        rightBtn.move(x, y);
+        rightBtn.moveTo(x, y);
         fieldRect.set(2 * b + d, 0, rect.right - 2 * b - d, rect.bottom);
         break;
     }
 
     buble.resize(d, d);
-    buble.move(rect.width() / 2 - d, rect.bottom - d - b);
+    buble.moveTo(rect.width() / 2 - d, rect.bottom - d - b);
   }
 
   @Override
@@ -131,12 +130,11 @@ public class GameController extends GraphicController {
       if(x < fieldRect.left)
         x = fieldRect.left;
 
-      buble.move(x, buble.getRect().top);
+      buble.moveTo(x, buble.getRect().top);
       ArrayList<Obstruction> lst = obstructionList();
       for(Obstruction o : lst) {
-        if(buble.isIntersection(o)) {
-          buble.move(oldX, buble.getRect().top);
-          return;
+        while(buble.isIntersection(o)) {
+          o.move(-10, 0);
         }
       }
 
@@ -154,13 +152,12 @@ public class GameController extends GraphicController {
       x += BUBLE_STEP;
       if(x > fieldRect.right)
         x = fieldRect.right;
-      buble.move(x - buble.getRect().width(), buble.getRect().top);
+      buble.moveTo(x - buble.getRect().width(), buble.getRect().top);
 
       ArrayList<Obstruction> lst = obstructionList();
       for(Obstruction o : lst) {
-        if (buble.isIntersection(o)) {
-          buble.move(oldX, buble.getRect().top);
-          return;
+        while (buble.isIntersection(o)) {
+          o.move(10, 0);
         }
       }
       setSurfaceModified(true);
@@ -201,12 +198,12 @@ public class GameController extends GraphicController {
       }
 
       if(obstc != null) {
-        obstc.scrollingStep(MOTION_STEP);
+        obstc.move(0, MOTION_STEP);
         if(buble.isIntersection(obstc)) {
           //!!!!! For debug
           obstc.move(
-            obstc.getRect().left,
-            buble.getRect().top - obstc.getRect().height()
+            0,
+            - MOTION_STEP
           );
         }
         if(obstc.isVisible())
@@ -302,8 +299,8 @@ public class GameController extends GraphicController {
     }
 
     @Override
-    void move(int x, int y) {
-      super.move(x, y);
+    void moveTo(int x, int y) {
+      super.moveTo(x, y);
       //transformationIndex = 0;
       onModify();
     }
@@ -331,19 +328,38 @@ public class GameController extends GraphicController {
     boolean isIntersection(Obstruction o) {
       if (bmpRect != null
       && Rect.intersects(bmpRect, o.getRect())) {
-        //TODO: Find bitmaps intersects
-        return true;
+        Rect inter = new Rect(bmpRect);
+        if(inter.intersect(o.getRect())
+          && o.getBmp() != null
+          && bmp != null)
+        {
+          for(int x = inter.left; x < inter.right; x ++) {
+            for (int y = inter.top; y < inter.bottom; y++) {
+  
+              int localX = x - bmpRect.left;
+              int localY = y - bmpRect.top;
+              try {
+                int transparency = Color.alpha(bmp.getPixel(localX, localY));
+                if (transparency > 0) {
+                  localX = x - o.getRect().left;
+                  localY = y - o.getRect().top;
+                  transparency = Color.alpha(o.getBmp().getPixel(localX, localY));
+                  if (transparency > 0)
+                    return true;
+                }
+              }
+              
+              catch (Exception ignored) {
+              }
+            }
+          }
+        }
       }
       return false;
     }
   }
 
-  interface Obstructionable {
-    public void scrollingStep(int step);
-    public boolean isVisible();
-  }
-
-  private class Obstruction extends GraphicObject implements Obstructionable {
+  private class Obstruction extends GraphicObject {
     Bitmap bmp;
 
     Obstruction(int resource_id) {
@@ -371,17 +387,11 @@ public class GameController extends GraphicController {
       bmp = Bitmap.createBitmap(srcBmp, 0, 0, srcBmp.getWidth(), srcBmp.getHeight(), matrix, true);
 
       resize(bmp.getWidth(), bmp.getHeight());
-      move(random.nextInt(
+      moveTo(random.nextInt(
         fieldRect.left + rect.width() + fieldRect.width()) - rect.width(),
         -1 * rect.height());
     }
 
-    @Override
-    public void scrollingStep(int step) {
-      move(rect.left, rect.top + step);
-    }
-
-    @Override
     public boolean isVisible() {
       return rect.top < fieldRect.bottom;
     }
@@ -397,6 +407,8 @@ public class GameController extends GraphicController {
         canvas.clipRect(screenRect, Region.Op.REPLACE);
       }
     }
+  
+    public Bitmap getBmp() {return bmp;}
   }
 
 }

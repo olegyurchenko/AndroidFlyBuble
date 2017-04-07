@@ -25,13 +25,13 @@ public class MainController extends GraphicController {
     int x = rect.width() / 3 - d / 2;
     int y = rect.height() / 3 - d / 2;
 
-    playBtn.move(x, y);
+    playBtn.moveTo(x, y);
     playBtn.resize(d, d);
 
     x = rect.width() / 3 - d / 2;
     y = rect.height() / 3 + d;
 
-    settingsBtn.move(x, y);
+    settingsBtn.moveTo(x, y);
     settingsBtn.resize(d, (d * 2) / 3);
   }
 

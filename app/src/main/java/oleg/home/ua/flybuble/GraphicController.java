@@ -288,7 +288,8 @@ public class GraphicController implements DrawView.SurfaceCallbacs {
 
     int getId() {return id;}
     Rect getRect() {return rect;}
-    void move(int x, int y) {rect.offsetTo(x, y);}
+    void move(int dx, int dy) {rect.offsetTo(rect.left + dx, rect.top + dy);}
+    void moveTo(int x, int y) {rect.offsetTo(x, y);}
     void resize(int w, int h) {rect.set(rect.left, rect.top, rect.left + w, rect.top + h);}
     boolean contains (int x, int y) {return  rect.contains(x, y);}
     boolean contains (float x, float y) {return  rect.contains((int)x, (int)y);}
