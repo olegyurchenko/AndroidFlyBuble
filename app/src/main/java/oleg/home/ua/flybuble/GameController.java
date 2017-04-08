@@ -38,6 +38,7 @@ public class GameController extends GraphicController {
   private Settings settings;
   private Random random;
   private long lastTimer = 0;
+  protected ArrayList<Bitmap> obstructionBitmapList;
 
 
   GameController(Context c) {
@@ -54,6 +55,10 @@ public class GameController extends GraphicController {
     rightBtn = new GameButton(RIGHT_BTN_ID, R.mipmap.right_btn_up, R.mipmap.right_btn_down);
 
     buble = new Buble();
+    obstructionBitmapList = new ArrayList<>();
+
+    obstructionBitmapList.add(BitmapFactory.decodeResource(context.getResources(), R.mipmap.pen1));
+    obstructionBitmapList.add(BitmapFactory.decodeResource(context.getResources(), R.mipmap.pencil1));
   }
 
   @Override
@@ -220,7 +225,7 @@ public class GameController extends GraphicController {
 
     if(objecCount < MAX_OBSTRUCTION_COUNT) {
       if((random.nextInt(1000) % 20) == 0)
-        new Obstruction(R.mipmap.pencil1);
+        new Obstruction(obstructionBitmapList.get(random.nextInt(1000) % obstructionBitmapList.size()));
     }
 
     if(rmList != null) {
@@ -378,10 +383,9 @@ public class GameController extends GraphicController {
   private class Obstruction extends GraphicObject {
     Bitmap bmp;
 
-    Obstruction(int resource_id) {
+    Obstruction(Bitmap srcBmp) {
       super(-1);
 
-      Bitmap srcBmp = BitmapFactory.decodeResource(context.getResources(), resource_id);
       float aspectRatio = (float) srcBmp.getWidth() / (float) srcBmp.getHeight();
 
       int w, h;
