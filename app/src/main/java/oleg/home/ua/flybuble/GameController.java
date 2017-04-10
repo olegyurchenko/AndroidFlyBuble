@@ -245,7 +245,8 @@ public class GameController extends GraphicController {
       if(lastTimer != 0) {
         surfaceLock();
         try {
-          motion();
+          if(buble != null && !buble.isDead())
+            motion();
         }
 
         finally {
@@ -271,28 +272,35 @@ public class GameController extends GraphicController {
     long lastTimer = 0;
     int transformationIndex = 0;
     Rect bmpRect;
+    boolean deadState;
+    int deadStage;
+    final long DEAD_TIMEOUT = 50;
+    final int DEAD_STEP = 20;
+    final int DEAD_COLOR = 0xDEADBE;
 
     Buble() {
       super(-1);
       srcBmp = BitmapFactory.decodeResource(context.getResources(), R.mipmap.buble);
       bmp = null;
       bmpRect = new Rect();
+      deadState = false;
     }
   
     void onModify() {
       int w = rect.width();
       int h = rect.height();
       bmpRect.set(rect);
-      switch(transformationIndex % 2)
-      {
-        case 0:
-          w -= deltaX;
-          bmpRect.left += deltaX / 2;
-          break;
-        case 1:
-          h -= deltaY;
-          bmpRect.top += deltaY / 2;
-          break;
+      if(w > deltaX && h > deltaY) {
+        switch (transformationIndex % 2) {
+          case 0:
+            w -= deltaX;
+            bmpRect.left += deltaX / 2;
+            break;
+          case 1:
+            h -= deltaY;
+            bmpRect.top += deltaY / 2;
+            break;
+        }
       }
       bmp = Bitmap.createScaledBitmap(srcBmp, w, h, true);
       bmpRect.set(bmpRect.left,
@@ -318,13 +326,38 @@ public class GameController extends GraphicController {
     
     @Override
     public void onTimer(long ms) {
-      if(lastTimer + TRANSFORMATION_TIMEOUT < ms) {
-        if (rect.width() > 0 && rect.height() > 0) {
-          transformationIndex ++;
-          onModify();
-          setSurfaceModified(true);
+      if(deadState) {
+        if(lastTimer + DEAD_TIMEOUT < ms) {
+          if(deadStage > 0) {
+            int new_width = rect.width();
+            int new_height = rect.height();
+
+            new_width -= DEAD_STEP;
+            new_height -= DEAD_STEP;
+
+            if(new_width <= 0 || new_height <= 0) {
+              deadStage = 0;
+            }
+            else {
+              rect.set(rect.left, rect.top, rect.left + new_width, rect.top + new_height);
+              transformationIndex ++;
+              onModify();
+              setSurfaceModified(true);
+            }
+
+          }
+          lastTimer = ms;
         }
-        lastTimer = ms;
+      }
+      else {
+        if(lastTimer + TRANSFORMATION_TIMEOUT < ms) {
+          if (rect.width() > 0 && rect.height() > 0) {
+            transformationIndex ++;
+            onModify();
+            setSurfaceModified(true);
+          }
+          lastTimer = ms;
+        }
       }
     }
 
@@ -335,6 +368,14 @@ public class GameController extends GraphicController {
       }
     }
 
+    void dead() {
+      deadState = true;
+      deadStage = rect.width() / DEAD_STEP;
+    }
+
+    boolean isDead() {
+      return deadState;
+    }
 
     boolean isIntersection(Obstruction o) {
       if (bmpRect != null
@@ -344,30 +385,46 @@ public class GameController extends GraphicController {
 
         Rect inter = new Rect(bmpRect);
 
-        if(inter.intersect(o.getRect()))
-        {
-          for(int x = inter.left; x < inter.right; x ++) {
-            for (int y = inter.top; y < inter.bottom; y++) {
 
-              int localX = x - bmpRect.left;
-              int localY = y - bmpRect.top;
-              int transparency = Color.alpha(bmp.getPixel(localX, localY));
-              if (transparency > 0) {
-                localX = x - o.getRect().left;
-                localY = y - o.getRect().top;
-                transparency = Color.alpha(o.getBmp().getPixel(localX, localY));
-                if (transparency > 0)
-                  return true;
-              }
+        if (inter.intersect(o.getRect())) {
+          int width = inter.width();
+          int height = inter.height();
+
+          int bublePixels[] = new int[width * height];
+          bmp.getPixels(bublePixels,
+            0,
+            width,
+            inter.left - bmpRect.left,
+            inter.top - bmpRect.top,
+            width,
+            height);
+
+          int obstructionPixels[] = new int[width * height];
+          o.getBmp().getPixels(obstructionPixels,
+            0,
+            width,
+            inter.left - o.getRect().left,
+            inter.top - o.getRect().top,
+            width,
+            height);
+
+          boolean intersect = false;
+
+          for (int i = 0; i < width * height; i++) {
+            if (Color.alpha(bublePixels[i]) != 0
+              && Color.alpha(obstructionPixels[i]) != 0) {
+
+              intersect = true;
+              if((obstructionPixels[i] & 0xffffff) == DEAD_COLOR)
+                dead();
             }
           }
+          return intersect;
         }
       }
 
       return false;
     }
-
-
   }
 
   private class Obstruction extends GraphicObject {
@@ -402,7 +459,7 @@ public class GameController extends GraphicController {
         -1 * rect.height());
     }
 
-    public boolean isVisible() {
+    boolean isVisible() {
       return rect.top < fieldRect.bottom;
     }
 
