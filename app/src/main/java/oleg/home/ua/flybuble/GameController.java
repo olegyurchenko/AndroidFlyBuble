@@ -59,6 +59,8 @@ public class GameController extends GraphicController {
 
     obstructionBitmapList.add(BitmapFactory.decodeResource(context.getResources(), R.mipmap.pen1));
     obstructionBitmapList.add(BitmapFactory.decodeResource(context.getResources(), R.mipmap.pencil1));
+    obstructionBitmapList.add(BitmapFactory.decodeResource(context.getResources(), R.mipmap.pin1));
+    obstructionBitmapList.add(BitmapFactory.decodeResource(context.getResources(), R.mipmap.injector1));
   }
 
   @Override
