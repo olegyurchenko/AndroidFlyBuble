@@ -371,6 +371,7 @@ public class GameController extends GraphicController {
     }
 
     void dead() {
+      Log.d("Buble", "dead()");
       deadState = true;
       deadStage = rect.width() / DEAD_STEP;
     }
@@ -379,7 +380,7 @@ public class GameController extends GraphicController {
       return deadState;
     }
 
-    boolean isIntersection(Obstruction o) {
+    synchronized boolean isIntersection(Obstruction o) {
       if (bmpRect != null
         && bmp != null
         && o.getBmp() != null
@@ -412,15 +413,21 @@ public class GameController extends GraphicController {
 
           boolean intersect = false;
 
+          Log.d("Buble", String.format("find intersect start w=%d h=%d %d", width, height, width * height));
+          long t = System.currentTimeMillis();
           for (int i = 0; i < width * height; i++) {
             if (Color.alpha(bublePixels[i]) != 0
               && Color.alpha(obstructionPixels[i]) != 0) {
 
               intersect = true;
-              if((obstructionPixels[i] & 0xffffff) == DEAD_COLOR)
+              if((obstructionPixels[i] & 0xffffff) == DEAD_COLOR) {
                 dead();
+                break;
+              }
+
             }
           }
+          Log.d("Buble", String.format("find intersect end %s %d", intersect ? "true" : "false", System.currentTimeMillis() - t));
           return intersect;
         }
       }
@@ -432,22 +439,27 @@ public class GameController extends GraphicController {
   private class Obstruction extends GraphicObject {
     Bitmap bmp;
 
-    Obstruction(Bitmap srcBmp) {
+    Obstruction(Bitmap src) {
       super(-1);
 
-      float aspectRatio = (float) srcBmp.getWidth() / (float) srcBmp.getHeight();
-
       int w, h;
+
+      float aspectRatio = (float) src.getWidth() / (float) src.getHeight();
+
       if(aspectRatio > 1.0) {
-        w = OBSTRUCTION_LENGTH;
+        w = OBSTRUCTION_LENGTH/2 + random.nextInt(OBSTRUCTION_LENGTH/2);
         h = (int)((float) w / aspectRatio);
       }
       else {
-        h = OBSTRUCTION_LENGTH;
+        h = OBSTRUCTION_LENGTH/2 + random.nextInt(OBSTRUCTION_LENGTH/2);
         w = (int)((float) h / aspectRatio);
       }
 
-      srcBmp = Bitmap.createScaledBitmap(srcBmp, w, h, true);
+      //w = src.getWidth();
+      //h = src.getHeight();
+
+      Bitmap srcBmp = Bitmap.createScaledBitmap(src, w, h, true);
+      //Bitmap srcBmp = Bitmap.createBitmap(src, 0, 0, w, h);
 
 
       float angle = random.nextFloat() * 360.0f;
