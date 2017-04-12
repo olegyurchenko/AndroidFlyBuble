@@ -60,7 +60,11 @@ public class GameController extends GraphicController {
     obstructionBitmapList.add(BitmapFactory.decodeResource(context.getResources(), R.mipmap.pen1));
     obstructionBitmapList.add(BitmapFactory.decodeResource(context.getResources(), R.mipmap.pencil1));
     obstructionBitmapList.add(BitmapFactory.decodeResource(context.getResources(), R.mipmap.pin1));
-    obstructionBitmapList.add(BitmapFactory.decodeResource(context.getResources(), R.mipmap.injector1));
+    obstructionBitmapList.add(BitmapFactory.decodeResource(context.getResources(), R.mipmap.pin2));
+    obstructionBitmapList.add(BitmapFactory.decodeResource(context.getResources(), R.mipmap.needle1));
+    obstructionBitmapList.add(BitmapFactory.decodeResource(context.getResources(), R.mipmap.prickle1));
+    obstructionBitmapList.add(BitmapFactory.decodeResource(context.getResources(), R.mipmap.prickle2));
+//    obstructionBitmapList.add(BitmapFactory.decodeResource(context.getResources(), R.mipmap.injector1));
   }
 
   @Override
@@ -413,21 +417,26 @@ public class GameController extends GraphicController {
 
           boolean intersect = false;
 
-          Log.d("Buble", String.format("find intersect start w=%d h=%d %d", width, height, width * height));
+          //Log.d("Buble", String.format("find intersect start w=%d h=%d %d", width, height, width * height));
           long t = System.currentTimeMillis();
+
+          //StringBuilder logStr = new StringBuilder();
           for (int i = 0; i < width * height; i++) {
-            if (Color.alpha(bublePixels[i]) != 0
-              && Color.alpha(obstructionPixels[i]) != 0) {
+            if (Color.alpha(bublePixels[i]) != 0) {
+              //logStr.append(String.format(" %04x", obstructionPixels[i]));
+              if(Color.alpha(obstructionPixels[i]) != 0) {
 
-              intersect = true;
-              if((obstructionPixels[i] & 0xffffff) == DEAD_COLOR) {
-                dead();
-                break;
+                intersect = true;
+                if ((obstructionPixels[i] & 0xffffff) == DEAD_COLOR) {
+                  dead();
+                  break;
+                }
+
               }
-
             }
           }
-          Log.d("Buble", String.format("find intersect end %s %d", intersect ? "true" : "false", System.currentTimeMillis() - t));
+          //Log.d("Buble", String.format("find intersect end %s %d", intersect ? "true" : "false", System.currentTimeMillis() - t));
+          //Log.d("Buble", String.format("intersect: %s %s", intersect ? "true" : "false", logStr.toString()));
           return intersect;
         }
       }
@@ -465,7 +474,8 @@ public class GameController extends GraphicController {
       float angle = random.nextFloat() * 360.0f;
       Matrix matrix = new Matrix();
       matrix.postRotate(angle);
-      bmp = Bitmap.createBitmap(srcBmp, 0, 0, srcBmp.getWidth(), srcBmp.getHeight(), matrix, true);
+      //bmp = Bitmap.createBitmap(srcBmp, 0, 0, srcBmp.getWidth(), srcBmp.getHeight(), matrix, true);
+      bmp = Bitmap.createBitmap(srcBmp, 0, 0, srcBmp.getWidth(), srcBmp.getHeight(), matrix, false);
 
       resize(bmp.getWidth(), bmp.getHeight());
       moveTo(random.nextInt(
