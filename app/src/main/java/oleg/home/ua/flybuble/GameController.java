@@ -9,10 +9,13 @@ import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.Region;
+import android.graphics.Typeface;
 import android.util.Log;
 
 import java.util.ArrayList;
+import java.util.Locale;
 import java.util.Random;
+import java.util.StringTokenizer;
 
 /**
  * Game controller.
@@ -39,7 +42,7 @@ public class GameController extends GraphicController {
   private Random random;
   private long lastTimer = 0;
   protected ArrayList<Bitmap> obstructionBitmapList;
-
+  private Statistics statistics;
 
   GameController(Context c) {
     super(c);
@@ -55,6 +58,8 @@ public class GameController extends GraphicController {
     rightBtn = new GameButton(RIGHT_BTN_ID, R.mipmap.right_btn_up, R.mipmap.right_btn_down);
 
     buble = new Buble();
+    statistics = new Statistics();
+
     obstructionBitmapList = new ArrayList<>();
 
     obstructionBitmapList.add(BitmapFactory.decodeResource(context.getResources(), R.mipmap.pen1));
@@ -83,7 +88,9 @@ public class GameController extends GraphicController {
         leftBtn.moveTo(x, y);
         y = rect.height() / 2 + b;
         rightBtn.moveTo(x, y);
-        fieldRect.set(2 * b + d, 0, rect.right, rect.bottom);
+        fieldRect.set(2 * b + d, 0, rect.right - 2 * b - d, rect.bottom);
+        statistics.moveTo(fieldRect.right, rect.top);
+        statistics.resize(rect.right - fieldRect.right, (rect.height()- d) / 2 - b);
         break;
 
       case Settings.RIGHT_KEY_POSITION:
@@ -92,7 +99,9 @@ public class GameController extends GraphicController {
         leftBtn.moveTo(x, y);
         y = rect.height() / 2 + b;
         rightBtn.moveTo(x, y);
-        fieldRect.set(0, 0, rect.right - 2 * b - d, rect.bottom);
+        fieldRect.set(2 * b + d, 0, rect.right - 2 * b - d, rect.bottom);
+        statistics.moveTo(rect.left, rect.top);
+        statistics.resize(rect.right - fieldRect.right, (rect.height()- d) / 2 - b);
         break;
 
       case Settings.DUAL_KEY_POSITION:
@@ -102,6 +111,8 @@ public class GameController extends GraphicController {
         x = rect.width() - d - b;
         rightBtn.moveTo(x, y);
         fieldRect.set(2 * b + d, 0, rect.right - 2 * b - d, rect.bottom);
+        statistics.moveTo(rect.left, rect.top);
+        statistics.resize(rect.right - fieldRect.right, (rect.height()- d) / 2 - b);
         break;
     }
 
@@ -251,8 +262,11 @@ public class GameController extends GraphicController {
       if(lastTimer != 0) {
         surfaceLock();
         try {
-          if(buble != null && !buble.isDead())
+          if(buble != null && !buble.isDead()) {
             motion();
+            statistics.incScore(ms - lastTimer);
+            statistics.incTime(ms - lastTimer);
+          }
         }
 
         finally {
@@ -502,4 +516,81 @@ public class GameController extends GraphicController {
     public Bitmap getBmp() {return bmp;}
   }
 
+  private class Statistics extends GraphicObject {
+
+    private long score = 0;
+    private long time = 0; //ms
+    private int textSize = 40,
+      textColor = Color.WHITE,
+      backColor = Color.BLUE;
+    Rect bounds;
+
+
+    Statistics() {
+      super(-1);
+      bounds = new Rect();
+    }
+
+    void onModify() {
+
+    }
+
+    void incScore(long s) {score += s; onModify();}
+    void incTime(long s) {time += s; onModify();}
+
+    String gameTimeText()
+    {
+      final long SEC_IN_MINUTE = 60;
+      final long SEC_IN_HOUR = 3600;
+      final long SEC_IN_DAY = 86400;
+      long day, hour, min, sec;
+
+      sec = time / 1000;
+
+      day = sec / SEC_IN_DAY;
+      sec %= SEC_IN_DAY;
+
+      hour = sec / SEC_IN_HOUR;
+      sec %= SEC_IN_HOUR;
+
+      min = sec / SEC_IN_MINUTE;
+      sec %= SEC_IN_MINUTE;
+
+
+      return String.format(Locale.getDefault(), "%,d-%02d:%02d:%02d",
+        day, hour, min, sec);
+    }
+
+    private void drawText(Canvas canvas, int row, String text) {
+
+      paint.setTypeface(Typeface.DEFAULT);// your preference here
+      paint.setTextSize(textSize);// have this the same as your text size
+      paint.getTextBounds(text, 0, text.length(), bounds);
+
+      int textHeight = textSize * 2;
+
+      int x = rect.left + (rect.width() - bounds.width()) / 2;
+      int y = rect.top + (rect.height() - textHeight * 2) / 2  +  textHeight * row + bounds.height();
+
+      paint.setColor(textColor);
+      canvas.drawText(text, x, y, paint);
+    }
+
+    @Override
+    public void onDraw(Canvas canvas) {
+      String scoreText = String.format(Locale.getDefault(), "%,d", score);
+      String timeText = gameTimeText();
+
+      paint.setColor(backColor);
+      paint.setStyle(Paint.Style.FILL);
+      canvas.drawRect(rect, paint);
+
+      drawText(canvas, 1, scoreText);
+      drawText(canvas, 0, timeText);
+    }
+  }
+
+
 }
+
+
